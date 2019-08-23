@@ -3,20 +3,24 @@
     <van-nav-bar title="登录" />
     <van-cell-group>
       <van-field
-        v-model="username"
+        v-model="user.mobile"
         required
         clearable
         label="手机号"
         placeholder="请输入手机号"
+        v-validate="'required|mobile'"  name="mobile"
+        :error-message="errors.first('mobile')"
         left-icon="phone-o"
       />
 
       <van-field
-        v-model="sms"
+        v-model="user.code"
         center
         left-icon="chat-o"
         clearable
         required
+        v-validate="'required|code'"  name="code"
+        :error-message="errors.first('code')"
         label="验证码"
         placeholder="请输入验证码"
       >
@@ -24,13 +28,76 @@
       </van-field>
     </van-cell-group>
     <div style="padding:20px">
-      <van-button class="login" type="info">登录</van-button>
+      <van-button class="login" :loading="isloading" @click="onlogin" type="info">登录</van-button>
+    </div>
+    <div class="text">
+        <span>隐私条款</span>
     </div>
   </div>
 </template>
 
 <script>
-export default {}
+import { userLogin } from '@/api/user.js'
+export default {
+  data () {
+    return {
+      user: {
+        mobile: '17635280098',
+        code: null
+      },
+      isloading: false
+    }
+  },
+  created () {
+    this.customValidatorMessage()
+  },
+  mounted () {
+    this.$validator.extend('mobile', {
+      getMessage: field => '手机号有误',
+      validate: value => {
+        return /^((13|14|15|17|18)[0-9]{1}\d{8})$/.test(value)
+      }
+    })
+    this.$validator.extend('code', {
+      getMessage: field => '验证码有误',
+      validate: value => {
+        return /^[0-9]{6}$/.test(value)
+      }
+    })
+  },
+  methods: {
+    async onlogin () {
+      try {
+        const vaild = this.$validator.validateAll()
+        if (!vaild) {
+          return
+        }
+        this.isloading = true
+        await userLogin(this.user)
+        //   this.$router.push('home')
+        this.isloading = false
+      } catch (err) {
+        if (err.response && err.response.status === 400) {
+          this.$toast.fail('手机号或者验证码错误！')
+        }
+        this.isloading = false
+      }
+    },
+    customValidatorMessage () {
+      const dict = {
+        custom: {
+          mobile: {
+            required: '手机号不能为空'
+          },
+          code: {
+            required: () => '验证码不能为空'
+          }
+        }
+      }
+      this.$validator.localize('zh_CN', dict)
+    }
+  }
+}
 </script>
 
 <style scoped lang="less">
@@ -53,6 +120,14 @@ export default {}
   .login {
     width: 100%;
     border-radius: 5px;
+  }
+  .text {
+      width: 100%;
+      text-align: center;
+      position:absolute;
+      bottom: 2%;
+      color: #666666;
+      font-size: 14px;
   }
 }
 </style>
