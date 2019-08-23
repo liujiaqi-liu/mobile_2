@@ -38,11 +38,12 @@
 
 <script>
 import { userLogin } from '@/api/user.js'
+import { mapMutations } from 'vuex'
 export default {
   data () {
     return {
       user: {
-        mobile: '17635280098',
+        mobile: null,
         code: null
       },
       isloading: false
@@ -66,6 +67,7 @@ export default {
     })
   },
   methods: {
+    ...mapMutations(['changeUser']),
     async onlogin () {
       try {
         const vaild = this.$validator.validateAll()
@@ -73,7 +75,8 @@ export default {
           return
         }
         this.isloading = true
-        await userLogin(this.user)
+        const { data } = await userLogin(this.user)
+        this.changeUser(data.data)
         //   this.$router.push('home')
         this.isloading = false
       } catch (err) {
